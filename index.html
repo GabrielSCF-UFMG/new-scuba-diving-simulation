@@ -11,6 +11,11 @@
 
   <link rel="manifest" href="manifest.json" />
 
+  <link rel="icon" type="image/png" href="assets/logo-bbzu.png" />
+  <link rel="apple-touch-icon" href="assets/logo-bbzu.png" />
+  <meta name="theme-color" content="#003f8f" />
+
+  
   <style>
     :root {
       --azul-escuro: #003366;
@@ -35,23 +40,41 @@
       color: var(--texto);
     }
 
-    header {
-      background: var(--azul-escuro);
-      color: #fff;
-      padding: 22px 16px;
-      text-align: center;
+    .app-header {
+      background: linear-gradient(135deg, #001f4d, #003f8f);
+      color: #ffffff;
+      padding: 18px 20px;
+      border-radius: 0 0 16px 16px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
     }
-
-    header h1 {
+    
+    .header-content {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .header-logo {
+      width: 82px;
+      height: 82px;
+      object-fit: contain;
+      border-radius: 14px;
+    }
+    
+    .header-text h1 {
       margin: 0;
-      font-size: 1.7rem;
+      font-size: 1.55rem;
+      font-weight: 800;
+    }
+    
+    .header-text p {
+      margin: 4px 0 0;
+      font-size: 0.95rem;
+      opacity: 0.95;
     }
 
-    header p {
-      margin: 8px 0 0;
-      opacity: 0.9;
-      font-size: 0.95rem;
-    }
 
     main {
       max-width: 1180px;
@@ -209,6 +232,29 @@
     @media (max-width: 760px) {
       .simulacao-layout {
         grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .app-header {
+        padding: 14px 12px;
+      }
+    
+      .header-content {
+        gap: 12px;
+      }
+    
+      .header-logo {
+        width: 64px;
+        height: 64px;
+      }
+    
+      .header-text h1 {
+        font-size: 1.15rem;
+      }
+    
+      .header-text p {
+        font-size: 0.82rem;
       }
     }
 
@@ -451,10 +497,21 @@
 </head>
 
 <body>
-  <header>
-    <h1>Simulador de Autonomia e Planejamento de Mergulho</h1>
-    <p>Autonomia de gás, tabelas de repetição, altitude e análise operacional integrada</p>
+  <header class="app-header">
+    <div class="header-content">
+      <img
+        src="assets/logo-bbzu.png"
+        alt="Logo Bombeiro Bizurado"
+        class="header-logo"
+      />
+  
+      <div class="header-text">
+        <h1>BBZU - Bombeiro Bizurado</h1>
+        <p>Simulador de Autonomia e Planejamento de Mergulho</p>
+      </div>
+    </div>
   </header>
+
 
   <main>
     <section>
