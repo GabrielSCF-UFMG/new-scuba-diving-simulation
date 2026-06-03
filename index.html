@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Simulador de Autonomia e Planejamento de Mergulho</title>
+
+  <meta name="description" content="Simulador didático de autonomia de gás, planejamento de mergulho, tabelas de repetição, altitude e análise operacional." />
+  <meta name="theme-color" content="#003366" />
+
+  <link rel="manifest" href="manifest.json" />
+
+  <style>
+    :root {
+      --azul-escuro: #003366;
+      --azul: #0059b3;
+      --azul-claro: #eef5ff;
+      --verde: #2e8b57;
+      --amarelo: #d99000;
+      --vermelho: #a60000;
+      --cinza: #f3f5f8;
+      --texto: #1f2933;
+      --borda: #d0d7e2;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #dff3ff 0%, #f7fbff 45%, #ffffff 100%);
+      color: var(--texto);
+    }
+
+    header {
+      background: var(--azul-escuro);
+      color: #fff;
+      padding: 22px 16px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.7rem;
+    }
+
+    header p {
+      margin: 8px 0 0;
+      opacity: 0.9;
+      font-size: 0.95rem;
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 20px 14px 40px;
+    }
+
+    section {
+      background: #fff;
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 18px;
+      box-shadow: 0 4px 18px rgba(0, 40, 80, 0.08);
+    }
+
+    h2 {
+      margin-top: 0;
+      color: var(--azul-escuro);
+      font-size: 1.25rem;
+    }
+
+    h3 {
+      color: var(--azul-escuro);
+    }
+
+    .aviso-principal {
+      background: #fff8e5;
+      border-left: 6px solid var(--amarelo);
+      padding: 14px;
+      border-radius: 8px;
+      line-height: 1.45;
+    }
+
+    .grid-parametros {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+    }
+
+    .campo {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    label {
+      font-weight: bold;
+      color: #263747;
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #aeb8c4;
+      border-radius: 8px;
+      font-size: 1rem;
+      background: #fff;
+    }
+
+    small {
+      color: #5d6d7e;
+      line-height: 1.3;
+    }
+
+    .formula {
+      background: var(--azul-claro);
+      border-left: 5px solid var(--azul);
+      padding: 14px;
+      border-radius: 8px;
+      overflow-x: auto;
+      line-height: 1.6;
+    }
+
+    .formula code {
+      font-weight: bold;
+      color: var(--azul-escuro);
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 14px;
+      margin-top: 12px;
+    }
+
+    .card {
+      background: var(--cinza);
+      border: 1px solid var(--borda);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .card .titulo {
+      font-size: 0.86rem;
+      color: #52616f;
+      margin-bottom: 6px;
+    }
+
+    .card .valor {
+      font-size: 1.45rem;
+      font-weight: bold;
+      color: var(--azul-escuro);
+    }
+
+    .card .sub {
+      font-size: 0.82rem;
+      color: #6b7c8f;
+      margin-top: 5px;
+    }
+
+    .acoes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    button {
+      border: none;
+      border-radius: 8px;
+      padding: 11px 16px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      filter: brightness(0.98);
+    }
+
+    .btn-primario {
+      background: var(--azul);
+      color: #fff;
+    }
+
+    .btn-secundario {
+      background: #e9eef5;
+      color: var(--azul-escuro);
+    }
+
+    .btn-perigo {
+      background: var(--vermelho);
+      color: #fff;
+    }
+
+    .simulacao-layout {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) minmax(260px, 1fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 760px) {
+      .simulacao-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .tanque-visual {
+      position: relative;
+      height: 320px;
+      border-radius: 16px;
+      overflow: hidden;
+      background: linear-gradient(180deg, #7dd3fc 0%, #0284c7 45%, #0f3f75 100%);
+      border: 3px solid #0b4f82;
+    }
+
+    .superficie {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 34px;
+      background: rgba(255, 255, 255, 0.28);
+      border-bottom: 2px dashed rgba(255, 255, 255, 0.65);
+      display: flex;
+      align-items: center;
+      padding-left: 10px;
+      color: #fff;
+      font-weight: bold;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    }
+
+    .fundo {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 48px;
+      background: linear-gradient(180deg, #c2a675, #7c5b32);
+      display: flex;
+      align-items: center;
+      padding-left: 10px;
+      color: #fff;
+      font-weight: bold;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    .mergulhador {
+      position: absolute;
+      left: 50%;
+      top: 58px;
+      transform: translateX(-50%);
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      background: #111827;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 1.8rem;
+      box-shadow: 0 7px 20px rgba(0, 0, 0, 0.35);
+      transition: top 0.3s linear;
+    }
+
+    .bolhas {
+      position: absolute;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.75);
+      animation: subirBolha 2.4s infinite linear;
+    }
+
+    .bolha1 {
+      left: 44%;
+      bottom: 60px;
+      animation-delay: 0s;
+    }
+
+    .bolha2 {
+      left: 55%;
+      bottom: 95px;
+      animation-delay: 0.8s;
+    }
+
+    .bolha3 {
+      left: 49%;
+      bottom: 135px;
+      animation-delay: 1.4s;
+    }
+
+    @keyframes subirBolha {
+      from {
+        transform: translateY(0) scale(0.7);
+        opacity: 0.2;
+      }
+      35% {
+        opacity: 0.9;
+      }
+      to {
+        transform: translateY(-220px) scale(1.4);
+        opacity: 0;
+      }
+    }
+
+    .painel-simulacao {
+      background: var(--cinza);
+      border-radius: 14px;
+      padding: 16px;
+      border: 1px solid var(--borda);
+    }
+
+    .barra-progresso {
+      width: 100%;
+      height: 18px;
+      background: #dce4ef;
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 10px 0 14px;
+    }
+
+    .barra-progresso-interna {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--verde), #8bd17c);
+      transition: width 0.2s linear;
+    }
+
+    .painel-noaa,
+    .analise-operacional {
+      margin-top: 14px;
+      padding: 16px;
+      border-radius: 10px;
+      background: var(--azul-claro);
+      border-left: 5px solid var(--azul);
+    }
+
+    .tabela-resumo {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      background: #fff;
+    }
+
+    .tabela-resumo th,
+    .tabela-resumo td {
+      border: 1px solid var(--borda);
+      padding: 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .tabela-resumo th {
+      background: var(--azul-escuro);
+      color: #fff;
+    }
+
+    .badge-ok,
+    .badge-alerta,
+    .badge-perigo {
+      display: inline-block;
+      padding: 5px 9px;
+      border-radius: 999px;
+      color: #fff;
+      font-weight: bold;
+      font-size: 0.86rem;
+    }
+
+    .badge-ok {
+      background: var(--verde);
+    }
+
+    .badge-alerta {
+      background: var(--amarelo);
+    }
+
+    .badge-perigo {
+      background: var(--vermelho);
+    }
+
+    .resultado-ok,
+    .aviso,
+    .resultado-alerta {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      line-height: 1.45;
+    }
+
+    .resultado-ok {
+      background: #e9f8ef;
+      border-left: 5px solid var(--verde);
+    }
+
+    .aviso {
+      background: #fff8e5;
+      border-left: 5px solid var(--amarelo);
+    }
+
+    .resultado-alerta {
+      background: #ffecec;
+      border-left: 5px solid var(--vermelho);
+    }
+
+    footer {
+      text-align: center;
+      padding: 22px;
+      color: #64748b;
+      font-size: 0.9rem;
+    }
+
+    .erro-geral {
+      background: #ffecec;
+      border-left: 6px solid var(--vermelho);
+      padding: 14px;
+      border-radius: 8px;
+      margin-top: 12px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Simulador de Autonomia e Planejamento de Mergulho</h1>
+    <p>Autonomia de gás, tabelas de repetição, altitude e análise operacional integrada</p>
+  </header>
+
+  <main>
+    <section>
+      <div class="aviso-principal">
+        <strong>Aviso importante:</strong>
+        este app é uma ferramenta didática de apoio ao estudo e à análise preliminar.
+        Não substitui treinamento formal, supervisor de mergulho, tabelas oficiais,
+        computador de mergulho, protocolos institucionais, normas de segurança ou planejamento operacional real.
+      </div>
+    </section>
+
+    <section>
+      <h2>Parâmetros do Cilindro e Consumo</h2>
+
+      <div class="grid-parametros">
+        <div class="campo">
+          <label for="volumeCilindro">Volume do cilindro</label>
+          <input type="number" id="volumeCilindro" min="1" step="0.1" value="12" />
+          <small>Em litros. Exemplo: 12 L.</small>
+        </div>
+
+        <div class="campo">
+          <label for="pressaoInicial">Pressão inicial</label>
+          <input type="number" id="pressaoInicial" min="1" step="1" value="200" />
+          <small>Em bar.</small>
+        </div>
+
+        <div class="campo">
+          <label for="reservaSeguranca">Reserva de segurança</label>
+          <input type="number" id="reservaSeguranca" min="0" step="1" value="50" />
+          <small>Pressão preservada no cilindro, em bar.</small>
+        </div>
+
+        <div class="campo">
+          <label for="consumoSuperficie">Consumo na superfície / SAC</label>
+          <input type="number" id="consumoSuperficie" min="1" step="0.1" value="25" />
+          <small>Em L/min.</small>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Parâmetros do Mergulho</h2>
+
+      <div class="grid-parametros">
+        <div class="campo">
+          <label for="profundidade">Profundidade planejada</label>
+          <input type="number" id="profundidade" min="0" step="0.1" value="18" />
+          <small>Em metros.</small>
+        </div>
+
+        <div class="campo">
+          <label for="tempoPlanejado">Tempo de fundo planejado</label>
+          <input type="number" id="tempoPlanejado" min="1" step="1" value="30" />
+          <small>Em minutos.</small>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Condições Operacionais</h2>
+
+      <div class="grid-parametros">
+        <div class="campo">
+          <label for="tipoOperacao">Tipo de operação</label>
+          <select id="tipoOperacao">
+            <option value="treinamento">Treinamento</option>
+            <option value="busca">Busca submersa</option>
+            <option value="resgate">Resgate</option>
+            <option value="recuperacao">Recuperação</option>
+            <option value="inspecao">Inspeção</option>
+          </select>
+          <small>Afeta o fator de consumo operacional.</small>
+        </div>
+
+        <div class="campo">
+          <label for="visibilidade">Visibilidade</label>
+          <select id="visibilidade">
+            <option value="boa">Boa</option>
+            <option value="media">Média</option>
+            <option value="ruim">Ruim</option>
+            <option value="zero">Visibilidade zero</option>
+          </select>
+          <small>Baixa visibilidade aumenta risco e consumo.</small>
+        </div>
+
+        <div class="campo">
+          <label for="correnteza">Correnteza</label>
+          <select id="correnteza">
+            <option value="nenhuma">Nenhuma</option>
+            <option value="leve">Leve</option>
+            <option value="moderada">Moderada</option>
+            <option value="forte">Forte</option>
+          </select>
+          <small>Correnteza aumenta esforço e consumo.</small>
+        </div>
+
+        <div class="campo">
+          <label for="temperaturaAgua">Temperatura da água</label>
+          <select id="temperaturaAgua">
+            <option value="normal">Normal</option>
+            <option value="fria">Fria</option>
+            <option value="muitoFria">Muito fria</option>
+          </select>
+          <small>Água fria pode aumentar risco e consumo.</small>
+        </div>
+
+        <div class="campo">
+          <label for="altitudeLocal">Altitude do local</label>
+          <input type="number" id="altitudeLocal" min="0" step="1" value="0" />
+          <small>Em metros. Use 0 para nível do mar.</small>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Mergulho Repetitivo</h2>
+
+      <div class="grid-parametros">
+        <div class="campo">
+          <label for="grupoAnterior">Grupo anterior</label>
+          <select id="grupoAnterior">
+            <option value="">Sem mergulho anterior</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+            <option value="E">E</option>
+            <option value="F">F</option>
+            <option value="G">G</option>
+            <option value="H">H</option>
+            <option value="I">I</option>
+            <option value="J">J</option>
+            <option value="K">K</option>
+            <option value="L">L</option>
+            <option value="M">M</option>
+            <option value="N">N</option>
+            <option value="O">O</option>
+            <option value="Z">Z</option>
+          </select>
+          <small>Usado para consultar o intervalo de superfície.</small>
+        </div>
+
+        <div class="campo">
+          <label for="intervaloSuperficie">Intervalo de superfície</label>
+          <input type="number" id="intervaloSuperficie" min="0" step="1" value="0" />
+          <small>Em minutos.</small>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Fórmulas Utilizadas</h2>
+
+      <div class="formula">
+        <p><code>Pressão utilizável = Pressão inicial - Reserva</code></p>
+        <p><code>Gás utilizável = Volume do cilindro × Pressão utilizável</code></p>
+        <p><code>Pressão absoluta = Profundidade / 10 + 1</code></p>
+        <p><code>Consumo em profundidade = SAC ajustado × Pressão absoluta</code></p>
+        <p><code>Autonomia = Gás utilizável / Consumo em profundidade</code></p>
+      </div>
+    </section>
+
+    <section>
+      <h2>Resultados de Gás</h2>
+
+      <div id="erroEntrada"></div>
+
+      <div class="cards">
+        <div class="card">
+          <div class="titulo">Pressão utilizável</div>
+          <div class="valor" id="pressaoUtilizavel">-</div>
+          <div class="sub">bar disponíveis antes da reserva</div>
+        </div>
+
+        <div class="card">
+          <div class="titulo">Gás utilizável</div>
+          <div class="valor" id="gasUtilizavel">-</div>
+          <div class="sub">litros disponíveis</div>
+        </div>
+
+        <div class="card">
+          <div class="titulo">Pressão absoluta</div>
+          <div class="valor" id="pressaoAbsoluta">-</div>
+          <div class="sub">ATA</div>
+        </div>
+
+        <div class="card">
+          <div class="titulo">SAC ajustado</div>
+          <div class="valor" id="sacAjustado">-</div>
+          <div class="sub">L/min</div>
+        </div>
+
+        <div class="card">
+          <div class="titulo">Consumo em profundidade</div>
+          <div class="valor" id="consumoProfundidade">-</div>
+          <div class="sub">L/min</div>
+        </div>
+
+        <div class="card">
+          <div class="titulo">Autonomia estimada</div>
+          <div class="valor" id="autonomia">-</div>
+          <div class="sub">minutos</div>
+        </div>
+
+        <div class="card">
+          <div class="titulo">Pressão restante prevista</div>
+          <div class="valor" id="pressaoRestante">-</div>
+          <div class="sub">após o tempo planejado</div>
+        </div>
+
+        <div class="card">
+          <div class="titulo">Fator operacional</div>
+          <div class="valor" id="fatorOperacional">-</div>
+          <div class="sub">multiplicador total</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Simulação Visual</h2>
+
+      <div class="simulacao-layout">
+        <div class="tanque-visual">
+          <div class="superficie">Superfície</div>
+          <div class="mergulhador" id="mergulhador">🤿</div>
+          <div class="bolhas bolha1"></div>
+          <div class="bolhas bolha2"></div>
+          <div class="bolhas bolha3"></div>
+          <div class="fundo" id="textoFundo">Profundidade alvo: -</div>
+        </div>
+
+        <div class="painel-simulacao">
+          <h3>Status da Simulação</h3>
+
+          <p><strong>Pressão atual:</strong> <span id="pressaoAtual">-</span></p>
+          <p><strong>Tempo simulado:</strong> <span id="tempoSimulado">0,0 min</span></p>
+          <p><strong>Tempo real:</strong> <span id="tempoReal">0,0 s</span></p>
+          <p><strong>Status:</strong> <span id="statusAnimacao">Aguardando início.</span></p>
+
+          <div class="barra-progresso">
+            <div class="barra-progresso-interna" id="barraProgressoInterna"></div>
+          </div>
+
+          <div class="acoes">
+            <button class="btn-primario" id="btnIniciar">Iniciar simulação</button>
+            <button class="btn-secundario" id="btnParar">Parar</button>
+            <button class="btn-perigo" id="btnResetar">Resetar</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div id="painelNoaa" class="painel-noaa"></div>
+    </section>
+
+    <section>
+      <div id="analiseOperacional" class="analise-operacional"></div>
+    </section>
+  </main>
+
+  <footer>
+    Simulador didático — utilize sempre planejamento oficial, equipe habilitada e protocolos de segurança.
+  </footer>
+
+  <script src="anexos-a-b.js?v=3.0"></script>
+
+  <script>
+    const FATORES_OPERACAO = {
+      treinamento: 1.0,
+      busca: 1.25,
+      resgate: 1.4,
+      recuperacao: 1.35,
+      inspecao: 1.15
+    };
+
+    const FATORES_VISIBILIDADE = {
+      boa: 1.0,
+      media: 1.1,
+      ruim: 1.25,
+      zero: 1.4
+    };
+
+    const FATORES_CORRENTEZA = {
+      nenhuma: 1.0,
+      leve: 1.1,
+      moderada: 1.25,
+      forte: 1.5
+    };
+
+    const FATORES_TEMPERATURA = {
+      normal: 1.0,
+      fria: 1.1,
+      muitoFria: 1.25
+    };
+
+    let simulacaoIntervalo = null;
+    let simulacaoInicio = null;
+
+    function formatar(valor, casas = 1) {
+      if (valor === null || valor === undefined || Number.isNaN(Number(valor))) {
+        return "-";
+      }
+
+      return Number(valor).toLocaleString("pt-BR", {
+        minimumFractionDigits: casas,
+        maximumFractionDigits: casas
+      });
+    }
+
+    function valorCampo(id, padrao = "") {
+      const el = document.getElementById(id);
+      return el ? el.value : padrao;
+    }
+
+    function lerDados() {
+      const Vc = Number(document.getElementById("volumeCilindro").value);
+      const Pi = Number(document.getElementById("pressaoInicial").value);
+      const R = Number(document.getElementById("reservaSeguranca").value);
+      const P = Number(document.getElementById("profundidade").value);
+      const SAC = Number(document.getElementById("consumoSuperficie").value);
+      const T = Number(document.getElementById("tempoPlanejado").value);
+
+      const tipoOperacao = valorCampo("tipoOperacao", "treinamento");
+      const visibilidade = valorCampo("visibilidade", "boa");
+      const correnteza = valorCampo("correnteza", "nenhuma");
+      const temperaturaAgua = valorCampo("temperaturaAgua", "normal");
+
+      const altitudeLocal = Number(valorCampo("altitudeLocal", 0));
+      const grupoAnterior = valorCampo("grupoAnterior", "");
+      const intervaloSuperficie = Number(valorCampo("intervaloSuperficie", 0));
+
+      if (Vc <= 0 || Pi <= 0 || R < 0 || P < 0 || SAC <= 0 || T <= 0) {
+        return {
+          erro: "Preencha todos os campos com valores válidos."
+        };
+      }
+
+      if (R >= Pi) {
+        return {
+          erro: "A reserva de segurança não pode ser maior ou igual à pressão inicial."
+        };
+      }
+
+      if (altitudeLocal < 0 || intervaloSuperficie < 0) {
+        return {
+          erro: "Altitude e intervalo de superfície não podem ser negativos."
+        };
+      }
+
+      const fatorOperacao = FATORES_OPERACAO[tipoOperacao] || 1;
+      const fatorVisibilidade = FATORES_VISIBILIDADE[visibilidade] || 1;
+      const fatorCorrenteza = FATORES_CORRENTEZA[correnteza] || 1;
+      const fatorTemperatura = FATORES_TEMPERATURA[temperaturaAgua] || 1;
+
+      const fatorTotal =
+        fatorOperacao *
+        fatorVisibilidade *
+        fatorCorrenteza *
+        fatorTemperatura;
+
+      const consumoOperacional = SAC * fatorTotal;
+
+      const PT = Pi - R;
+      const PA = P / 10 + 1;
+      const GU = Vc * PT;
+      const CP = consumoOperacional * PA;
+      const A = GU / CP;
+
+      const pressaoConsumidaPlanejado = (CP * T) / Vc;
+      const pressaoRestante = Pi - pressaoConsumidaPlanejado;
+      const duracaoAnimacao = Math.max(A * 3, 3);
+
+      return {
+        erro: null,
+
+        Vc,
+        Pi,
+        R,
+        P,
+        SAC,
+        T,
+
+        tipoOperacao,
+        visibilidade,
+        correnteza,
+        temperaturaAgua,
+
+        altitudeLocal,
+        grupoAnterior,
+        intervaloSuperficie,
+
+        fatorOperacao,
+        fatorVisibilidade,
+        fatorCorrenteza,
+        fatorTemperatura,
+        fatorTotal,
+        consumoOperacional,
+
+        PT,
+        PA,
+        GU,
+        CP,
+        A,
+        pressaoRestante,
+        duracaoAnimacao
+      };
+    }
+
+    function calcularPlanejamentoNOAA(d) {
+      if (
+        typeof obterGrupoPorTempoFundo !== "function" ||
+        typeof obterProfundidadeCorrigidaPorAltitude !== "function" ||
+        typeof obterGrupoAposIntervaloSuperficie !== "function" ||
+        typeof obterTNRPorGrupoEProfundidade !== "function"
+      ) {
+        return {
+          erro: true,
+          mensagem: "Arquivo anexos-a-b.js não carregado ou funções de consulta indisponíveis."
+        };
+      }
+
+      let profundidadeParaTabela = d.P;
+      let altitudeInfo = null;
+
+      if (d.altitudeLocal > 0) {
+        altitudeInfo = obterProfundidadeCorrigidaPorAltitude(d.P, d.altitudeLocal);
+
+        if (altitudeInfo.erro) {
+          return {
+            erro: true,
+            mensagem: altitudeInfo.mensagem
+          };
+        }
+
+        profundidadeParaTabela = altitudeInfo.profundidadeCorrigida;
+      }
+
+      let grupoAposIS = null;
+      let intervaloInfo = null;
+      let tnrInfo = null;
+      let tnr = 0;
+      let ptf = null;
+
+      if (d.grupoAnterior) {
+        intervaloInfo = obterGrupoAposIntervaloSuperficie(
+          d.grupoAnterior,
+          d.intervaloSuperficie
+        );
+
+        if (intervaloInfo.erro) {
+          return {
+            erro: true,
+            mensagem: intervaloInfo.mensagem
+          };
+        }
+
+        grupoAposIS = intervaloInfo.grupoAposIS;
+
+        tnrInfo = obterTNRPorGrupoEProfundidade(
+          grupoAposIS,
+          profundidadeParaTabela
+        );
+
+        if (tnrInfo.erro) {
+          return {
+            erro: true,
+            mensagem: tnrInfo.mensagem
+          };
+        }
+
+        tnr = tnrInfo.tnr || 0;
+        ptf = tnrInfo.ptf;
+      }
+
+      const tempoTotalTabela = d.T + tnr;
+
+      const resultadoGrupo = obterGrupoPorTempoFundo(
+        profundidadeParaTabela,
+        tempoTotalTabela
+      );
+
+      if (resultadoGrupo.erro) {
+        return {
+          erro: true,
+          mensagem: resultadoGrupo.mensagem,
+          profundidadeParaTabela,
+          altitudeInfo,
+          intervaloInfo,
+          tnrInfo,
+          tnr,
+          ptf,
+          tempoTotalTabela
+        };
+      }
+
+      return {
+        erro: false,
+
+        profundidadeReal: d.P,
+        profundidadeParaTabela,
+        altitudeInfo,
+
+        grupoAnterior: d.grupoAnterior || null,
+        intervaloSuperficie: d.intervaloSuperficie,
+        intervaloInfo,
+        grupoAposIS,
+
+        tnrInfo,
+        tnr,
+        ptf,
+
+        tempoFundoPlanejado: d.T,
+        tempoTotalTabela,
+
+        resultadoGrupo
+      };
+    }
+
+    function renderizarPainelNOAA(noaa) {
+      if (!noaa) {
+        return "";
+      }
+
+      if (noaa.erro) {
+        return `
+          <h2>Planejamento pelas Tabelas</h2>
+          <div class="resultado-alerta">
+            <strong>Erro no planejamento:</strong> ${noaa.mensagem}
+          </div>
+        `;
+      }
+
+      const r = noaa.resultadoGrupo;
+
+      const statusDescompressao = r.descompressiva
+        ? `<span class="badge-alerta">Mergulho descompressivo</span>`
+        : `<span class="badge-ok">Dentro do limite sem descompressão</span>`;
+
+      const altitudeTexto = noaa.altitudeInfo
+        ? `
+          <tr>
+            <td>Profundidade corrigida por altitude</td>
+            <td>${formatar(noaa.profundidadeParaTabela, 1)} m</td>
+          </tr>
+          <tr>
+            <td>Altitude usada na tabela</td>
+            <td>${formatar(noaa.altitudeInfo.altitudeTabela, 1)} m</td>
+          </tr>
+        `
+        : `
+          <tr>
+            <td>Correção por altitude</td>
+            <td>Não aplicada</td>
+          </tr>
+        `;
+
+      const repetitivoTexto = noaa.grupoAnterior
+        ? `
+          <tr>
+            <td>Grupo anterior</td>
+            <td>${noaa.grupoAnterior}</td>
+          </tr>
+          <tr>
+            <td>Intervalo de superfície</td>
+            <td>${formatar(noaa.intervaloSuperficie, 0)} min</td>
+          </tr>
+          <tr>
+            <td>Grupo após intervalo de superfície</td>
+            <td>${noaa.grupoAposIS || "Sem grupo residual"}</td>
+          </tr>
+          <tr>
+            <td>TNR</td>
+            <td>${formatar(noaa.tnr, 0)} min</td>
+          </tr>
+          <tr>
+            <td>PTF</td>
+            <td>${noaa.ptf !== null ? `${formatar(noaa.ptf, 0)} min` : "Não aplicável"}</td>
+          </tr>
+        `
+        : `
+          <tr>
+            <td>Mergulho repetitivo</td>
+            <td>Não informado</td>
+          </tr>
+        `;
+
+      const paradaTexto = r.descompressiva
+        ? `
+          <tr>
+            <td>Parada indicada</td>
+            <td>${formatar(r.parada6m1, 0)} min a 6 m</td>
+          </tr>
+        `
+        : `
+          <tr>
+            <td>Parada descompressiva</td>
+            <td>Não indicada pela célula consultada</td>
+          </tr>
+        `;
+
+      return `
+        <h2>Planejamento pelas Tabelas / Anexos</h2>
+
+        <table class="tabela-resumo">
+          <tr>
+            <th>Item</th>
+            <th>Resultado</th>
+          </tr>
+
+          <tr>
+            <td>Profundidade real informada</td>
+            <td>${formatar(noaa.profundidadeReal, 1)} m</td>
+          </tr>
+
+          ${altitudeTexto}
+
+          <tr>
+            <td>Profundidade usada na Tabela 1</td>
+            <td>${formatar(r.profundidadeTabela, 1)} m / ${r.profundidadePes} pés</td>
+          </tr>
+
+          <tr>
+            <td>Tempo de fundo planejado</td>
+            <td>${formatar(noaa.tempoFundoPlanejado, 0)} min</td>
+          </tr>
+
+          ${repetitivoTexto}
+
+          <tr>
+            <td>Tempo total para tabela</td>
+            <td>${formatar(noaa.tempoTotalTabela, 0)} min</td>
+          </tr>
+
+          <tr>
+            <td>Limite sem descompressão</td>
+            <td>${formatar(r.limiteSemDescompressao, 0)} min</td>
+          </tr>
+
+          <tr>
+            <td>Grupo de repetição final</td>
+            <td><strong>${r.grupo}</strong></td>
+          </tr>
+
+          <tr>
+            <td>Tempo de fundo da célula usada</td>
+            <td>${formatar(r.tempoFundoTabela, 0)} min</td>
+          </tr>
+
+          ${paradaTexto}
+
+          <tr>
+            <td>Status</td>
+            <td>${statusDescompressao}</td>
+          </tr>
+        </table>
+      `;
+    }
+
+    function gerarAnaliseOperacional(d, noaa) {
+      const alertas = [];
+      const avisos = [];
+
+      if (d.T > d.A) {
+        alertas.push("O tempo planejado é maior que a autonomia de gás calculada.");
+      }
+
+      if (d.pressaoRestante < d.R) {
+        alertas.push("A pressão restante prevista fica abaixo da reserva de segurança.");
+      }
+
+      if (d.pressaoRestante < 0) {
+        alertas.push("O consumo previsto ultrapassa o gás disponível no cilindro.");
+      }
+
+      if (noaa && noaa.erro) {
+        alertas.push(`Erro no planejamento por tabela: ${noaa.mensagem}`);
+      }
+
+      if (noaa && !noaa.erro) {
+        if (noaa.ptf !== null && d.T > noaa.ptf) {
+          alertas.push("O tempo de fundo planejado excede o PTF do mergulho repetitivo.");
+        }
+
+        if (noaa.resultadoGrupo.descompressiva) {
+          avisos.push(
+            `A célula consultada indica mergulho descompressivo com parada de ${formatar(noaa.resultadoGrupo.parada6m1, 0)} min a 6 m.`
+          );
+        }
+
+        if (noaa.tempoTotalTabela > noaa.resultadoGrupo.limiteSemDescompressao) {
+          avisos.push("O tempo total para tabela ultrapassa o limite sem descompressão informado na linha consultada.");
+        }
+      }
+
+      if (d.correnteza === "forte") {
+        avisos.push("Correnteza forte informada. Reavaliar esforço, cabo-guia, ponto de entrada e ponto de saída.");
+      }
+
+      if (d.visibilidade === "zero") {
+        avisos.push("Visibilidade zero informada. Recomenda-se reforçar controle por cabo, comunicação e supervisão.");
+      }
+
+      if (d.temperaturaAgua === "muitoFria") {
+        avisos.push("Água muito fria informada. Considerar risco térmico, proteção adequada e redução do tempo operacional.");
+      }
+
+      if (d.fatorTotal >= 2) {
+        avisos.push("O fator operacional total está elevado, indicando consumo bastante aumentado.");
+      }
+
+      let classificacao = "ok";
+      let textoClassificacao = "Planejamento compatível com os parâmetros informados.";
+
+      if (avisos.length > 0) {
+        classificacao = "alerta";
+        textoClassificacao = "Planejamento exige atenção operacional.";
+      }
+
+      if (alertas.length > 0) {
+        classificacao = "perigo";
+        textoClassificacao = "Planejamento não recomendado com os parâmetros informados.";
+      }
+
+      const badge =
+        classificacao === "ok"
+          ? `<span class="badge-ok">OK</span>`
+          : classificacao === "alerta"
+            ? `<span class="badge-alerta">Atenção</span>`
+            : `<span class="badge-perigo">Não recomendado</span>`;
+
+      return `
+        <h2>Análise Operacional Integrada</h2>
+
+        <p><strong>Status geral:</strong> ${badge}</p>
+        <p>${textoClassificacao}</p>
+
+        <table class="tabela-resumo">
+          <tr>
+            <th>Item</th>
+            <th>Resultado</th>
+          </tr>
+
+          <tr>
+            <td>Consumo SAC informado</td>
+            <td>${formatar(d.SAC, 1)} L/min</td>
+          </tr>
+
+          <tr>
+            <td>Fator operacional total</td>
+            <td>${formatar(d.fatorTotal, 2)} x</td>
+          </tr>
+
+          <tr>
+            <td>Consumo operacional ajustado</td>
+            <td>${formatar(d.consumoOperacional, 1)} L/min</td>
+          </tr>
+
+          <tr>
+            <td>Consumo em profundidade</td>
+            <td>${formatar(d.CP, 1)} L/min</td>
+          </tr>
+
+          <tr>
+            <td>Autonomia calculada</td>
+            <td>${formatar(d.A, 1)} min</td>
+          </tr>
+
+          <tr>
+            <td>Tempo planejado</td>
+            <td>${formatar(d.T, 1)} min</td>
+          </tr>
+
+          <tr>
+            <td>Pressão restante prevista</td>
+            <td>${formatar(d.pressaoRestante, 1)} bar</td>
+          </tr>
+        </table>
+
+        ${
+          alertas.length
+            ? `
+              <div class="resultado-alerta">
+                <strong>Alertas críticos:</strong>
+                <ul>
+                  ${alertas.map(item => `<li>${item}</li>`).join("")}
+                </ul>
+              </div>
+            `
+            : ""
+        }
+
+        ${
+          avisos.length
+            ? `
+              <div class="aviso">
+                <strong>Avisos operacionais:</strong>
+                <ul>
+                  ${avisos.map(item => `<li>${item}</li>`).join("")}
+                </ul>
+              </div>
+            `
+            : ""
+        }
+
+        ${
+          !alertas.length && !avisos.length
+            ? `
+              <div class="resultado-ok">
+                <strong>Sem alertas:</strong> os parâmetros informados estão coerentes no cálculo de gás e na consulta às tabelas.
+              </div>
+            `
+            : ""
+        }
+      `;
+    }
+
+    function atualizarCards(d) {
+      document.getElementById("pressaoUtilizavel").textContent = `${formatar(d.PT, 1)} bar`;
+      document.getElementById("gasUtilizavel").textContent = `${formatar(d.GU, 0)} L`;
+      document.getElementById("pressaoAbsoluta").textContent = `${formatar(d.PA, 2)} ATA`;
+      document.getElementById("sacAjustado").textContent = `${formatar(d.consumoOperacional, 1)} L/min`;
+      document.getElementById("consumoProfundidade").textContent = `${formatar(d.CP, 1)} L/min`;
+      document.getElementById("autonomia").textContent = `${formatar(d.A, 1)} min`;
+      document.getElementById("pressaoRestante").textContent = `${formatar(d.pressaoRestante, 1)} bar`;
+      document.getElementById("fatorOperacional").textContent = `${formatar(d.fatorTotal, 2)} x`;
+    }
+
+    function limparResultadosPorErro(mensagem) {
+      document.getElementById("erroEntrada").innerHTML = `
+        <div class="erro-geral">${mensagem}</div>
+      `;
+
+      [
+        "pressaoUtilizavel",
+        "gasUtilizavel",
+        "pressaoAbsoluta",
+        "sacAjustado",
+        "consumoProfundidade",
+        "autonomia",
+        "pressaoRestante",
+        "fatorOperacional"
+      ].forEach(id => {
+        document.getElementById(id).textContent = "-";
+      });
+
+      document.getElementById("painelNoaa").innerHTML = `
+        <h2>Planejamento pelas Tabelas / Anexos</h2>
+        <div class="resultado-alerta">Corrija os dados de entrada para consultar as tabelas.</div>
+      `;
+
+      document.getElementById("analiseOperacional").innerHTML = `
+        <h2>Análise Operacional Integrada</h2>
+        <div class="resultado-alerta">Corrija os dados de entrada para gerar a análise operacional.</div>
+      `;
+    }
+
+    function atualizarInterface() {
+      const d = lerDados();
+
+      if (d.erro) {
+        pararSimulacao();
+        limparResultadosPorErro(d.erro);
+        return;
+      }
+
+      document.getElementById("erroEntrada").innerHTML = "";
+
+      atualizarCards(d);
+
+      document.getElementById("textoFundo").textContent = `Profundidade alvo: ${formatar(d.P, 1)} m`;
+
+      if (!simulacaoIntervalo) {
+        document.getElementById("pressaoAtual").textContent = `${formatar(d.Pi, 1)} bar`;
+        document.getElementById("tempoSimulado").textContent = "0,0 min";
+        document.getElementById("tempoReal").textContent = "0,0 s";
+        document.getElementById("statusAnimacao").textContent = "Aguardando início.";
+        document.getElementById("barraProgressoInterna").style.width = "0%";
+        document.getElementById("mergulhador").style.top = "58px";
+      }
+
+      const noaa = calcularPlanejamentoNOAA(d);
+
+      document.getElementById("painelNoaa").innerHTML = renderizarPainelNOAA(noaa);
+
+      document.getElementById("analiseOperacional").innerHTML =
+        gerarAnaliseOperacional(d, noaa);
+    }
+
+    function iniciarSimulacao() {
+      pararSimulacao();
+
+      const d = lerDados();
+
+      if (d.erro) {
+        limparResultadosPorErro(d.erro);
+        return;
+      }
+
+      simulacaoInicio = Date.now();
+
+      document.getElementById("statusAnimacao").textContent = "Simulação em andamento.";
+
+      simulacaoIntervalo = setInterval(() => {
+        const agora = Date.now();
+        const tempoRealSegundos = (agora - simulacaoInicio) / 1000;
+        const progresso = Math.min(tempoRealSegundos / d.duracaoAnimacao, 1);
+
+        const tempoSimulado = d.A * progresso;
+        const pressaoConsumida = ((d.CP * tempoSimulado) / d.Vc);
+        const pressaoAtual = Math.max(d.Pi - pressaoConsumida, 0);
+
+        document.getElementById("pressaoAtual").textContent = `${formatar(pressaoAtual, 1)} bar`;
+        document.getElementById("tempoSimulado").textContent = `${formatar(tempoSimulado, 1)} min`;
+        document.getElementById("tempoReal").textContent = `${formatar(tempoRealSegundos, 1)} s`;
+        document.getElementById("barraProgressoInterna").style.width = `${progresso * 100}%`;
+
+        const topoInicial = 58;
+        const topoFinal = 218;
+        const topoAtual = topoInicial + ((topoFinal - topoInicial) * progresso);
+        document.getElementById("mergulhador").style.top = `${topoAtual}px`;
+
+        if (pressaoAtual <= d.R && progresso < 1) {
+          document.getElementById("statusAnimacao").textContent = "Reserva de segurança atingida.";
+        }
+
+        if (progresso >= 1) {
+          pararSimulacao(false);
+          document.getElementById("statusAnimacao").textContent = "Autonomia simulada concluída.";
+          document.getElementById("barraProgressoInterna").style.width = "100%";
+        }
+      }, 200);
+    }
+
+    function pararSimulacao(resetarStatus = true) {
+      if (simulacaoIntervalo) {
+        clearInterval(simulacaoIntervalo);
+        simulacaoIntervalo = null;
+      }
+
+      if (resetarStatus) {
+        const d = lerDados();
+
+        if (!d.erro) {
+          document.getElementById("statusAnimacao").textContent = "Simulação parada.";
+        }
+      }
+    }
+
+    function resetarParametros() {
+      pararSimulacao();
+
+      document.getElementById("volumeCilindro").value = 12;
+      document.getElementById("pressaoInicial").value = 200;
+      document.getElementById("reservaSeguranca").value = 50;
+      document.getElementById("profundidade").value = 18;
+      document.getElementById("consumoSuperficie").value = 25;
+      document.getElementById("tempoPlanejado").value = 30;
+
+      document.getElementById("tipoOperacao").value = "treinamento";
+      document.getElementById("visibilidade").value = "boa";
+      document.getElementById("correnteza").value = "nenhuma";
+      document.getElementById("temperaturaAgua").value = "normal";
+
+      document.getElementById("altitudeLocal").value = 0;
+      document.getElementById("grupoAnterior").value = "";
+      document.getElementById("intervaloSuperficie").value = 0;
+
+      atualizarInterface();
+    }
+
+    [
+      "volumeCilindro",
+      "pressaoInicial",
+      "reservaSeguranca",
+      "profundidade",
+      "consumoSuperficie",
+      "tempoPlanejado",
+      "tipoOperacao",
+      "visibilidade",
+      "correnteza",
+      "temperaturaAgua",
+      "altitudeLocal",
+      "grupoAnterior",
+      "intervaloSuperficie"
+    ].forEach(id => {
+      const campo = document.getElementById(id);
+
+      if (!campo) {
+        return;
+      }
+
+      campo.addEventListener("input", atualizarInterface);
+      campo.addEventListener("change", atualizarInterface);
+    });
+
+    document.getElementById("btnIniciar").addEventListener("click", iniciarSimulacao);
+    document.getElementById("btnParar").addEventListener("click", () => pararSimulacao(true));
+    document.getElementById("btnResetar").addEventListener("click", resetarParametros);
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("service-worker.js").catch(() => {
+          console.warn("Service Worker não registrado.");
+        });
+      });
+    }
+
+    atualizarInterface();
+  </script>
+</body>
+</html>
